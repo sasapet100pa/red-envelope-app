@@ -112,9 +112,16 @@ async function claim(){
     const b=writeBatch(db);
     b.set(doc(db,'claims',String(n)),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
     b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{uid:u.uid});
-    try{await b.commit();return{n}}catch(e){if(e.code!=='permission-denied')return{err:'連線失敗，請稍後再試'}}
+    try{
+      await b.commit();
+      return{n};
+    }catch(e){
+      console.error('Claim batch error:', e);
+      if(e.code==='permission-denied') continue;
+      return{err:'連線失敗，請稍後再試'};
+    }
   }
-  return{err:'紅包已全數送完，或目前人潮較多，請稍後再試。'};
+  return{err:'紅包已被搶先領取完畢，請再試一次！'};
 }
 
 function testDraw(){
