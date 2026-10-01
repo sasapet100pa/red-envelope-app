@@ -1,13 +1,13 @@
 <!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>紅包獎池後台</title><style>
 :root{--bg:#f6f6f6;--card:#fff;--tx:#222;--bd:#ddd}@media(prefers-color-scheme:dark){:root{--bg:#161616;--card:#222;--tx:#eee;--bd:#444}}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif}main{max-width:780px;margin:0 auto;padding:16px}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif}main{max-width:880px;margin:0 auto;padding:16px}
 .c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px;overflow-x:auto}h2{font-size:16px;margin:0 0 8px}
 input,button,select,textarea{font:inherit;padding:6px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}table{border-collapse:collapse;width:100%}td,th{padding:4px;border-bottom:1px solid var(--bd);text-align:left}.m{color:#888;font-size:13px}.n{width:70px}pre{white-space:pre-wrap;font-size:13px}
 </style></head><body><main><div class="c"><button id="in">使用 Google 登入</button> <span id="who" class="m"></span></div>
 <div id="app" hidden>
 <div class="c"><h2>① 獎項</h2><table id="pz"></table>
-<div class="m">數量 -1＝不限量。權重＝各獎項在獎位中的相對比例（數量有限的獎項不會超過其數量）。<b>修改後必須到 ③ 重新產生獎位才會生效。</b></div>
+<div class="m">數量 -1＝不限量。權重＝各獎項在獎位中的相對比例（數量有限的獎項不會超過其數量）。圖片可填檔名（如 p1.png）或完整網址。<b>修改後必須到 ③ 重新產生獎位才會生效。</b></div>
 <p><button id="add">＋新增獎項</button> <button id="seed">載入範例獎項</button></p></div>
 <div class="c"><h2>② 折價券領取連結（中獎後顯示「前往領取」按鈕）</h2>獎項 <select id="lk"></select><br>
 領取連結（優惠券平台的固定連結）<input id="lf" style="width:100%" placeholder="https://…"><p><button id="lsv">儲存連結</button> <button id="lap">套用到已產生的獎位</button></p>
@@ -42,7 +42,7 @@ $('#in').onclick=()=>signInWithPopup(au,new GoogleAuthProvider()).catch(fail);
 onAuthStateChanged(au,u=>{$('#who').textContent=u&&!u.isAnonymous?u.email:'';$('#app').hidden=!(u&&!u.isAnonymous);if(u&&!u.isAnonymous)start()});
 function start(){if(started++)return;
   onSnapshot(collection(db,'prizes'),s=>{P=s.docs.map(d=>({id:d.id,...d.data()}));
-    $('#pz').innerHTML='<tr><th>名稱</th><th>數量</th><th>權重</th><th></th></tr>'+P.map(p=>`<tr data-id="${p.id}"><td><input class="nm" value="${esc(p.name)}"></td><td><input class="n q" type="number" value="${p.qty}"></td><td><input class="n w" type="number" step="0.1" min="0" value="${p.w}"></td><td><button class="sv">儲存</button> <button class="rm">刪除</button></td></tr>`).join('');
+    $('#pz').innerHTML='<tr><th>名稱</th><th>圖片網址/檔名</th><th>數量</th><th>權重</th><th></th></tr>'+P.map(p=>`<tr data-id="${p.id}"><td><input class="nm" value="${esc(p.name)}"></td><td><input class="img" value="${esc(p.img||'')}" placeholder="例: p1.png"></td><td><input class="n q" type="number" value="${p.qty}"></td><td><input class="n w" type="number" step="0.1" min="0" value="${p.w}"></td><td><button class="sv">儲存</button> <button class="rm">刪除</button></td></tr>`).join('');
     const cur=$('#lk').value;$('#lk').innerHTML=P.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');if(cur)$('#lk').value=cur;if($('#lk').value!==lkId){lkId=$('#lk').value;lkLoad()}},fail);
   getDoc(doc(db,'settings','main')).then(s=>{if(!s.exists())setDoc(doc(db,'settings','main'),{daily_limit:1});$('#dl').value=s.data()?.daily_limit??1;$('#en').checked=s.data()?.enabled!==false});
   loadTx();poolStatus();recent();
@@ -51,9 +51,9 @@ function start(){if(started++)return;
 // ① 獎項
 $('#pz').onclick=async e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const id=tr.dataset.id;
   try{if(e.target.className==='rm'){if(confirm('確定刪除這個獎項？'))await deleteDoc(doc(db,'prizes',id))}
-  else if(e.target.className==='sv'){await updateDoc(doc(db,'prizes',id),{name:tr.querySelector('.nm').value.trim(),qty:Math.trunc(+tr.querySelector('.q').value),w:Math.max(0,+tr.querySelector('.w').value||0)});alert('已儲存。要讓新設定生效，請到 ③ 重新產生獎位。')}}catch(x){fail(x)}};
-$('#add').onclick=()=>addDoc(collection(db,'prizes'),{name:'新獎項',qty:10,w:10}).catch(fail);
-$('#seed').onclick=async()=>{if(!confirm('會新增 4 個範例獎項'))return;for(const [name,qty,w] of [['🏆 大獎：5,000 元購物金',1,1],['🥈 二獎：500 元購物金',10,9],['🥉 三獎：100 元折價券',100,30],['🐾 小獎：寵物零食試吃包',-1,60]])await addDoc(collection(db,'prizes'),{name,qty,w}).catch(fail)};
+  else if(e.target.className==='sv'){await updateDoc(doc(db,'prizes',id),{name:tr.querySelector('.nm').value.trim(),img:tr.querySelector('.img').value.trim(),qty:Math.trunc(+tr.querySelector('.q').value),w:Math.max(0,+tr.querySelector('.w').value||0)});alert('已儲存。要讓新設定生效，請到 ③ 重新產生獎位。')}}catch(x){fail(x)}};
+$('#add').onclick=()=>addDoc(collection(db,'prizes'),{name:'新獎項',img:'',qty:10,w:10}).catch(fail);
+$('#seed').onclick=async()=>{if(!confirm('會新增 4 個範例獎項'))return;for(const [name,qty,w] of [['🏆 大獎：5,000 元購物金',1,1],['🥈 二獎：500 元購物金',10,9],['🥉 三獎：100 元折價券',100,30],['🐾 小獎：寵物零食試吃包',-1,60]])await addDoc(collection(db,'prizes'),{name,img:'',qty,w}).catch(fail)};
 // ② 領取連結
 async function lkLoad(){if(!lkId)return;try{$('#lf').value=(await getDoc(doc(db,'prizeLinks',lkId))).data()?.link||''}catch(e){}}
 $('#lk').onchange=()=>{lkId=$('#lk').value;lkLoad()};
@@ -81,7 +81,7 @@ async function gen(append){
   try{let start=0;
     if(append)start=(await getDoc(doc(db,'meta','pool'))).data()?.size||0;
     else for(const c of ['claims','deviceDay','queue']){const s=await getDocs(collection(db,c));await chunks(s.docs,(b,d)=>b.delete(d.ref))}
-    await chunks(arr.map((p,i)=>[String(start+i+1),{prize:p.id,name:p.name,big:p.qty>0&&p.qty<=10,link:links[p.id]||''}]),(b,[id,v])=>b.set(doc(db,'queue',id),v));
+    await chunks(arr.map((p,i)=>[String(start+i+1),{prize:p.id,name:p.name,img:p.img||'',big:p.qty>0&&p.qty<=10,link:links[p.id]||''}]),(b,[id,v])=>b.set(doc(db,'queue',id),v));
     await setDoc(doc(db,'meta','pool'),{size:start+arr.length});alert(`已產生 ${arr.length} 個獎位`);poolStatus();recent()}catch(x){fail(x)}}
 $('#g1').onclick=()=>gen(false);$('#g2').onclick=()=>gen(true);
 // ④⑤ 限制與文字
