@@ -57,7 +57,8 @@ const DUR=10;
 const app=initializeApp(firebaseConfig),au=getAuth(app),db=getFirestore(app);
 const ready=new Promise(r=>onAuthStateChanged(au,u=>u&&r(u)));signInAnonymously(au).catch(()=>{});
 const $=s=>document.querySelector(s),q=new URLSearchParams(location.search);
-const src=q.get('utm_source')||q.get('ref')||q.get('src')||'direct';
+const rawSrc=q.get('utm_source')||q.get('ref')||q.get('src')||'direct';
+const src=rawSrc.slice(0,40); // 確保符合 rules 限制 (<=40)
 const store=(q.get('s')||q.get('store')||'').toUpperCase(),testCode=(q.get('test_code')||'').toLowerCase();
 let canDraw=!!store||!!testCode,busy=false,PR=[],TL=null;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -112,9 +113,18 @@ async function claim(){
   let n=1+Math.floor(Math.random()*pool.size);
   for(let t=0;t<15;t++,n=n%pool.size+1){
     const b=writeBatch(db);
-    // 正確修復寫入路徑
-    b.set(doc(db,'claims',String(n)),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
-    b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{uid:u.uid});
+    // 嚴格依照 firestore.rules claimOk 與 deviceDayOk 要求結構寫入
+    b.set(doc(db,'claims',String(n)),{
+      uid: u.uid,
+      store: store,
+      day: day,
+      k: k,
+      src: src,
+      ts: serverTimestamp()
+    });
+    b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{
+      uid: u.uid
+    });
     try{
       await b.commit();
       return{n};
