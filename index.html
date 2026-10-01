@@ -30,7 +30,7 @@ button:active{transform:scale(.98)}button:disabled{opacity:.5;box-shadow:none}
   
   <div class="action-box">
     <div id="tb" hidden style="background:#fff0c2;color:#5a4300;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px">🧪 測試模式：結果不扣正式獎池<select id="force" style="margin-top:6px;width:100%"></select></div>
-    <div id="store">載入中…</div>
+    <div id="store">載入門市中…</div>
     <div class="sub-title" id="intro">本頁僅限本次消費滿額顧客使用。<br>點擊天上掉下來的紅包揭曉獎項！</div>
     <button id="go">抽紅包</button>
     <div id="res"></div>
@@ -62,27 +62,44 @@ let canDraw=!!store||!!testCode,busy=false,PR=[],TL=null;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const okUrl=u=>/^https?:\/\//i.test(u||''),dayNum=()=>Math.floor((Date.now()+288e5)/864e5);
 const stop=m=>{$('#store').textContent=m;canDraw=false;$('#go').disabled=true};
+
+// 初始化門市顯示
+if(!store && !testCode){
+  stop('請掃描門市提供的 QR code 進入抽獎');
+} else if(store){
+  $('#store').textContent = '門市代碼：' + store;
+}
+
 if(testCode){$('#tb').hidden=false;$('#store').textContent='測試模式';
   getDoc(doc(db,'testLinks',testCode)).then(s=>{TL=s.data();if(!TL)throw 0}).catch(()=>stop('測試連結無效或已過期'))}
-else if(!store)stop('請掃描門市提供的 QR code 進入抽獎');
-else Promise.all([getDoc(doc(db,'stores',store)),getDoc(doc(db,'settings','main'))]).then(([s,m])=>{const d=s.data();
-  if(m.data()?.enabled===false)stop('抽獎活動目前暫停，請洽門市人員');
-  else if(!d||d.enabled===false)stop('此門市目前未開放抽獎');else $('#store').textContent='門市：'+d.name}).catch(()=>{});
+else if(store) {
+  Promise.all([getDoc(doc(db,'stores',store)),getDoc(doc(db,'settings','main'))]).then(([s,m])=>{
+    const d=s.data();
+    if(m.exists() && m.data()?.enabled===false) stop('抽獎活動目前暫停，請洽門市人員');
+    else if(d && d.enabled===false) stop('此門市目前未開放抽獎');
+    else if(d && d.name) $('#store').textContent='門市：'+d.name;
+  }).catch(e=>{ console.log('Store fetch note:', e); });
+}
+
 getDocs(collection(db,'prizes')).then(s=>{PR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.qty>0&&b.qty>0?a.qty-b.qty:b.qty-a.qty);
   if(testCode)$('#force').innerHTML='<option value="">隨機（依機率）</option>'+PR.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}).catch(()=>{});
 getDoc(doc(db,'settings','texts')).then(s=>{const t=s.data()||{};if(t.intro!=null)$('#intro').textContent=t.intro;if(t.btn)$('#go').textContent=t.btn}).catch(()=>{});
 
 async function claim(){
   const u=await ready;
-  const L0=(await getDoc(doc(db,'settings','main'))).data()?.daily_limit??1,L=L0===0?20:L0;
-  const pool=(await getDoc(doc(db,'meta','pool'))).data();if(!pool||!pool.size)return{err:'活動尚未開始'};
+  const mainDoc = await getDoc(doc(db,'settings','main'));
+  const L0 = mainDoc.exists() ? (mainDoc.data()?.daily_limit ?? 1) : 1;
+  const L = L0===0 ? 20 : L0;
+  const poolDoc = await getDoc(doc(db,'meta','pool'));
+  const pool = poolDoc.exists() ? poolDoc.data() : null;
+  if(!pool||!pool.size)return{err:'活動尚未開始（請至後台產生獎位）'};
   const day=dayNum();let k=0;
   for(let i=1;i<=L;i++){if(!(await getDoc(doc(db,'deviceDay',`${u.uid}_${day}_${i}`))).exists()){k=i;break}}
   if(!k)return{err:`這支手機今天已抽過 ${L} 次，明天再來！`};
   let n=1+Math.floor(Math.random()*pool.size);
   for(let t=0;t<15;t++,n=n%pool.size+1){
     const b=writeBatch(db);
-    b.set(doc(db,'claims',String(n)),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
+    b.set(doc(doc(db,'claims',String(n))),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
     b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{uid:u.uid});
     try{await b.commit();return{n}}catch(e){if(e.code!=='permission-denied')return{err:'連線失敗，請稍後再試'}}
   }
