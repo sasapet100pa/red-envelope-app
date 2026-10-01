@@ -45,7 +45,7 @@ button:active{transform:scale(.98)}button:disabled{opacity:.5;box-shadow:none}
 </main>
 
 <div id="game" hidden><canvas id="cv"></canvas><div id="hud"><span id="tm"></span><span id="cnt"></span></div></div>
-<div id="result" hidden><div class="rbox"><div id="rt"></div><img id="rimg" style="max-width:180px;max-height:180px;margin:12px auto;display:none;border-radius:10px;object-fit:contain;"><div id="rp"></div><a id="rl" hidden target="_blank" rel="noopener">前往領取折價券</a><button id="rb" style="margin-top:10px"></button></div></div>
+<div id="result" hidden><div class="rbox"><div id="rt"></div><img id="rimg" style="max-width:180px;max-height:180px;margin:12px auto;display:none;border-radius:10px;object-fit:contain;" onerror="this.style.display='none';"><div id="rp"></div><a id="rl" hidden target="_blank" rel="noopener">前往領取折價券</a><button id="rb" style="margin-top:10px"></button></div></div>
 
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -64,9 +64,7 @@ let canDraw=!!store||!!testCode,busy=false,PR=[],TL=null;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const okUrl=u=>/^https?:\/\//i.test(u||'');
 
-// 嚴格對齊 firestore.rules 中的 today() 計算公式: math.floor((request.time.toMillis() + 28800000) / 86400000)
 const dayNum=()=>Math.floor((Date.now()+28800000)/86400000);
-
 const stop=m=>{$('#store').textContent=m;canDraw=false;$('#go').disabled=true};
 
 if(!store && !testCode){
@@ -122,7 +120,6 @@ async function claim(){
     const slotId = String((startN + t - 1) % size + 1);
     const b = writeBatch(db);
     
-    // 嚴格對齊 firestore.rules claimOk 與 deviceDayOk
     b.set(doc(db,'claims',slotId),{
       uid: u.uid,
       store: store,
@@ -161,7 +158,14 @@ function showResult(d){
   if(d.ok){
     $('#rt').textContent=(d.test?'（測試）':'')+'🎉 恭喜獲得';
     $('#rp').textContent=d.prize;
-    if(d.img){rimg.src=d.img;rimg.style.display='block';}else{rimg.style.display='none';}
+    if(d.img){
+      let imgSrc = d.img;
+      if(imgSrc === 'popcorn.png' || imgSrc === 'popcorn.jpg') imgSrc = 'popcorn.png.jpg';
+      rimg.src = imgSrc;
+      rimg.style.display = 'block';
+    }else{
+      rimg.style.display = 'none';
+    }
     if(okUrl(d.link)){rl.href=d.link;rl.hidden=false;}
   }else{
     $('#rt').textContent='很可惜';
