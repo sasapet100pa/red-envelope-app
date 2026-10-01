@@ -58,11 +58,15 @@ const app=initializeApp(firebaseConfig),au=getAuth(app),db=getFirestore(app);
 const ready=new Promise(r=>onAuthStateChanged(au,u=>u&&r(u)));signInAnonymously(au).catch(()=>{});
 const $=s=>document.querySelector(s),q=new URLSearchParams(location.search);
 const rawSrc=q.get('utm_source')||q.get('ref')||q.get('src')||'direct';
-const src=rawSrc.slice(0,40); // 確保符合 rules 限制 (<=40)
+const src=rawSrc.slice(0,40);
 const store=(q.get('s')||q.get('store')||'').toUpperCase(),testCode=(q.get('test_code')||'').toLowerCase();
 let canDraw=!!store||!!testCode,busy=false,PR=[],TL=null;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const okUrl=u=>/^https?:\/\//i.test(u||''),dayNum=()=>Math.floor((Date.now()+288e5)/864e5);
+const okUrl=u=>/^https?:\/\//i.test(u||'');
+
+// 嚴格對齊 firestore.rules 中的 today() 計算公式: math.floor((request.time.toMillis() + 28800000) / 86400000)
+const dayNum=()=>Math.floor((Date.now()+28800000)/86400000);
+
 const stop=m=>{$('#store').textContent=m;canDraw=false;$('#go').disabled=true};
 
 if(!store && !testCode){
@@ -103,33 +107,40 @@ async function claim(){
   const pool = poolDoc.exists() ? poolDoc.data() : null;
   if(!pool||!pool.size)return{err:'活動尚未開始（請至後台產生獎位）'};
   
-  const day=dayNum();let k=0;
+  const day=dayNum();
+  let k=0;
   for(let i=1;i<=L;i++){
     const existsSnap = await getDoc(doc(db,'deviceDay',`${u.uid}_${day}_${i}`));
     if(!existsSnap.exists()){k=i;break;}
   }
   if(!k)return{err:`這支手機今天已抽過 ${L} 次，明天再來！`};
   
-  let n=1+Math.floor(Math.random()*pool.size);
-  for(let t=0;t<15;t++,n=n%pool.size+1){
-    const b=writeBatch(db);
-    // 嚴格依照 firestore.rules claimOk 與 deviceDayOk 要求結構寫入
-    b.set(doc(db,'claims',String(n)),{
+  const size = Number(pool.size);
+  let startN = Math.floor(Math.random() * size) + 1;
+  
+  for(let t=0;t<20;t++){
+    const slotId = String((startN + t - 1) % size + 1);
+    const b = writeBatch(db);
+    
+    // 嚴格對齊 firestore.rules claimOk 與 deviceDayOk
+    b.set(doc(db,'claims',slotId),{
       uid: u.uid,
       store: store,
       day: day,
-      k: k,
+      k: Number(k),
       src: src,
       ts: serverTimestamp()
     });
+    
     b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{
       uid: u.uid
     });
+    
     try{
       await b.commit();
-      return{n};
+      return { n: slotId };
     }catch(e){
-      console.warn('Attempt', t, 'failed for slot', n, e);
+      console.warn('Attempt', t, 'failed for slot', slotId, e);
       if(e.code==='permission-denied') continue;
       return{err:'連線失敗，請稍後再試'};
     }
