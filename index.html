@@ -101,22 +101,25 @@ async function claim(){
   const poolDoc = await getDoc(doc(db,'meta','pool'));
   const pool = poolDoc.exists() ? poolDoc.data() : null;
   if(!pool||!pool.size)return{err:'活動尚未開始（請至後台產生獎位）'};
+  
   const day=dayNum();let k=0;
   for(let i=1;i<=L;i++){
     const existsSnap = await getDoc(doc(db,'deviceDay',`${u.uid}_${day}_${i}`));
     if(!existsSnap.exists()){k=i;break;}
   }
   if(!k)return{err:`這支手機今天已抽過 ${L} 次，明天再來！`};
+  
   let n=1+Math.floor(Math.random()*pool.size);
   for(let t=0;t<15;t++,n=n%pool.size+1){
     const b=writeBatch(db);
+    // 正確修復寫入路徑
     b.set(doc(db,'claims',String(n)),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
     b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{uid:u.uid});
     try{
       await b.commit();
       return{n};
     }catch(e){
-      console.error('Claim batch error:', e);
+      console.warn('Attempt', t, 'failed for slot', n, e);
       if(e.code==='permission-denied') continue;
       return{err:'連線失敗，請稍後再試'};
     }
