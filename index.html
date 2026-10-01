@@ -25,8 +25,8 @@ button:active{transform:scale(.98)}button:disabled{opacity:.5;box-shadow:none}
 </style></head><body>
 <main>
 <div class="hero-card">
-  <!-- 主視覺大圖 (支援 hero.jpg 與 hero.jpg.jpg) -->
-  <img src="hero.jpg" class="hero-img" alt="百分百寵物11週年慶滿額抽紅包" onerror="if(this.src.indexOf('hero.jpg.jpg')===-1)this.src='hero.jpg.jpg';">
+  <!-- 相容 hero.jpg.jpg 與 hero.jpg -->
+  <img src="hero.jpg.jpg" class="hero-img" alt="百分百寵物11週年慶滿額抽紅包" onerror="if(this.src.indexOf('hero.jpg.jpg')!==-1)this.src='hero.jpg';">
   
   <div class="action-box">
     <div id="tb" hidden style="background:#fff0c2;color:#5a4300;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px">🧪 測試模式：結果不扣正式獎池<select id="force" style="margin-top:6px;width:100%"></select></div>
@@ -52,6 +52,7 @@ import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase
 import {getAuth,signInAnonymously,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,getDocs,query,where,limit,writeBatch,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import {firebaseConfig} from './firebase-config.js';
+
 const DUR=10;
 const app=initializeApp(firebaseConfig),au=getAuth(app),db=getFirestore(app);
 const ready=new Promise(r=>onAuthStateChanged(au,u=>u&&r(u)));signInAnonymously(au).catch(()=>{});
@@ -63,27 +64,34 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const okUrl=u=>/^https?:\/\//i.test(u||''),dayNum=()=>Math.floor((Date.now()+288e5)/864e5);
 const stop=m=>{$('#store').textContent=m;canDraw=false;$('#go').disabled=true};
 
-// 初始化門市顯示
 if(!store && !testCode){
   stop('請掃描門市提供的 QR code 進入抽獎');
 } else if(store){
   $('#store').textContent = '門市代碼：' + store;
 }
 
-if(testCode){$('#tb').hidden=false;$('#store').textContent='測試模式';
-  getDoc(doc(db,'testLinks',testCode)).then(s=>{TL=s.data();if(!TL)throw 0}).catch(()=>stop('測試連結無效或已過期'))}
-else if(store) {
+if(testCode){
+  $('#tb').hidden=false;$('#store').textContent='測試模式';
+  getDoc(doc(db,'testLinks',testCode)).then(s=>{TL=s.data();if(!TL)throw 0}).catch(()=>stop('測試連結無效或已過期'));
+} else if(store) {
   Promise.all([getDoc(doc(db,'stores',store)),getDoc(doc(db,'settings','main'))]).then(([s,m])=>{
     const d=s.data();
     if(m.exists() && m.data()?.enabled===false) stop('抽獎活動目前暫停，請洽門市人員');
     else if(d && d.enabled===false) stop('此門市目前未開放抽獎');
     else if(d && d.name) $('#store').textContent='門市：'+d.name;
-  }).catch(e=>{ console.log('Store fetch note:', e); });
+  }).catch(e=>{ console.log('Store info error:', e); });
 }
 
-getDocs(collection(db,'prizes')).then(s=>{PR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.qty>0&&b.qty>0?a.qty-b.qty:b.qty-a.qty);
-  if(testCode)$('#force').innerHTML='<option value="">隨機（依機率）</option>'+PR.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}).catch(()=>{});
-getDoc(doc(db,'settings','texts')).then(s=>{const t=s.data()||{};if(t.intro!=null)$('#intro').textContent=t.intro;if(t.btn)$('#go').textContent=t.btn}).catch(()=>{});
+getDocs(collection(db,'prizes')).then(s=>{
+  PR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.qty>0&&b.qty>0?a.qty-b.qty:b.qty-a.qty);
+  if(testCode)$('#force').innerHTML='<option value="">隨機（依機率）</option>'+PR.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+}).catch(()=>{});
+
+getDoc(doc(db,'settings','texts')).then(s=>{
+  const t=s.data()||{};
+  if(t.intro!=null)$('#intro').textContent=t.intro;
+  if(t.btn)$('#go').textContent=t.btn;
+}).catch(()=>{});
 
 async function claim(){
   const u=await ready;
@@ -94,32 +102,51 @@ async function claim(){
   const pool = poolDoc.exists() ? poolDoc.data() : null;
   if(!pool||!pool.size)return{err:'活動尚未開始（請至後台產生獎位）'};
   const day=dayNum();let k=0;
-  for(let i=1;i<=L;i++){if(!(await getDoc(doc(db,'deviceDay',`${u.uid}_${day}_${i}`))).exists()){k=i;break}}
+  for(let i=1;i<=L;i++){
+    const existsSnap = await getDoc(doc(db,'deviceDay',`${u.uid}_${day}_${i}`));
+    if(!existsSnap.exists()){k=i;break;}
+  }
   if(!k)return{err:`這支手機今天已抽過 ${L} 次，明天再來！`};
   let n=1+Math.floor(Math.random()*pool.size);
   for(let t=0;t<15;t++,n=n%pool.size+1){
     const b=writeBatch(db);
-    b.set(doc(doc(db,'claims',String(n))),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
+    b.set(doc(db,'claims',String(n)),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
     b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{uid:u.uid});
     try{await b.commit();return{n}}catch(e){if(e.code!=='permission-denied')return{err:'連線失敗，請稍後再試'}}
   }
   return{err:'紅包已全數送完，或目前人潮較多，請稍後再試。'};
 }
-function testDraw(){const pool=PR.filter(p=>p.w>0),f=PR.find(p=>p.id===$('#force').value);let p=f;
+
+function testDraw(){
+  const pool=PR.filter(p=>p.w>0),f=PR.find(p=>p.id===$('#force').value);let p=f;
   if(!p){if(!pool.length)return{err:'尚未設定獎項'};let r=Math.random()*pool.reduce((a,x)=>a+x.w,0);p=pool.find(x=>(r-=x.w)<0)||pool[pool.length-1]}
-  return{ok:1,test:1,prize:p.name,img:p.img||'',link:(TL.links||{})[p.id]||null}}
-function showResult(d){const R=$('#result'),rb=$('#rb'),rl=$('#rl'),rimg=$('#rimg');R.hidden=false;rb.hidden=false;rl.hidden=true;$('#rp').style.fontSize='';rb.textContent='關閉';rb.onclick=()=>R.hidden=true;
+  return{ok:1,test:1,prize:p.name,img:p.img||'',link:(TL.links||{})[p.id]||null}
+}
+
+function showResult(d){
+  const R=$('#result'),rb=$('#rb'),rl=$('#rl'),rimg=$('#rimg');
+  R.hidden=false;rb.hidden=false;rl.hidden=true;$('#rp').style.fontSize='';rb.textContent='關閉';
+  rb.onclick=()=>R.hidden=true;
   if(d.ok){
     $('#rt').textContent=(d.test?'（測試）':'')+'🎉 恭喜獲得';
     $('#rp').textContent=d.prize;
     if(d.img){rimg.src=d.img;rimg.style.display='block';}else{rimg.style.display='none';}
-    if(okUrl(d.link)){rl.href=d.link;rl.hidden=false}
-  }else{$('#rt').textContent='很可惜';$('#rp').textContent=d.err\vert{}\vert{}'發生錯誤';rimg.style.display='none';$('#rp').style.fontSize='16px'}}
+    if(okUrl(d.link)){rl.href=d.link;rl.hidden=false;}
+  }else{
+    $('#rt').textContent='很可惜';
+    $('#rp').textContent=d.err || '發生錯誤';
+    rimg.style.display='none';
+    $('#rp').style.fontSize='16px';
+  }
+}
+
 async function reveal(n){
   const rb=$('#rb');$('#result').hidden=false;$('#rt').textContent='結算中…';$('#rp').textContent='';$('#rl').hidden=true;rb.hidden=true;$('#rimg').style.display='none';
   let d=null;try{d=(await getDoc(doc(db,'queue',String(n)))).data()}catch(e){}
   if(!d){$('#rt').textContent='連線失敗';$('#rp').textContent='您的紅包已保留，請重試';rb.hidden=false;rb.textContent='重新取得結果';rb.onclick=()=>reveal(n);return}
-  showResult({ok:1,prize:d.name,img:d.img||'',link:d.link});loadLast()}
+  showResult({ok:1,prize:d.name,img:d.img||'',link:d.link});loadLast();
+}
+
 async function loadLast(){try{const u=await ready;
   const s=await getDocs(query(collection(db,'claims'),where('uid','==',u.uid),limit(20)));
   const c=s.docs.map(d=>({n:d.id,...d.data()})).filter(x=>x.ts).sort((a,b)=>b.ts.toMillis()-a.ts.toMillis())[0];
@@ -136,6 +163,7 @@ $('#go').onclick=async()=>{
   else{r.textContent='確認資格中…';const c=await claim();if(c.err)return fail(c.err);n=c.n}
   r.textContent='';
   await rain();n?await reveal(n):showResult(t);busy=false;b.disabled=!canDraw};
+
 function rain(){return new Promise(done=>{
   const G=$('#game'),cv=$('#cv'),ctx=cv.getContext('2d'),dpr=devicePixelRatio||1,W=innerWidth,H=innerHeight;
   G.hidden=false;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
