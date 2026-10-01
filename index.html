@@ -1,25 +1,31 @@
 <!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>百分百寵物 週年慶紅包雨</title>
+<title>百分百寵物 11週年慶紅包雨</title>
 <style>
 :root{--bg:#fff3e8;--card:#fff;--tx:#3a1c14;--mut:#8a6a60;--red:#d62828;--gold:#f7b32b;--bd:#f0d9cc;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 @media(prefers-color-scheme:dark){:root{--bg:#1d1210;--card:#2a1a17;--tx:#fbeee8;--mut:#c0a096;--bd:#4a2e28}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
-main{max-width:480px;margin:0 auto;padding:20px 16px 40px}h1{font-size:22px;text-align:center;color:var(--red);margin:0 0 4px}
+main{max-width:480px;margin:0 auto;padding:0 16px 40px}
+.hero-img{width:100%;max-width:480px;display:block;margin:0 auto 16px;border-radius:0 0 16px 16px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+h1{font-size:22px;text-align:center;color:var(--red);margin:0 0 4px}
 .sub{text-align:center;color:var(--mut);font-size:14px;margin-bottom:16px}.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:14px}
 label{display:block;font-size:14px;color:var(--mut);margin-top:10px}input,select{width:100%;font:inherit;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
 button{width:100%;margin-top:14px;font:inherit;font-weight:700;font-size:18px;padding:12px;border-radius:10px;border:0;background:var(--red);color:#fff;cursor:pointer}button:disabled{opacity:.5}
 #res{text-align:center;margin-top:12px;min-height:22px;font-size:15px;color:var(--red)}
-table{width:100%;font-size:14px;border-collapse:collapse}td{padding:6px 2px;border-bottom:1px solid var(--bd)}td+td{text-align:right;white-space:nowrap}h2{font-size:16px;margin:0 0 8px}
+table{width:100%;font-size:14px;border-collapse:collapse}td{padding:8px 2px;border-bottom:1px solid var(--bd)}td+td{text-align:right;white-space:nowrap}h2{font-size:16px;margin:0 0 8px}
 #game,#result{position:fixed;inset:0;z-index:9}#game{background:linear-gradient(#6d0b13,#c1121f)}
 #cv{display:block;width:100%;height:100%;touch-action:none}
 #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px;color:#fff;font-weight:700;font-size:20px;pointer-events:none}
 #result{background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px}
 .rbox{background:var(--card);border:3px solid var(--gold);border-radius:18px;padding:24px 20px;width:100%;max-width:340px;text-align:center}
-#rt{font-size:18px;color:var(--mut)}#rp{font-size:24px;font-weight:700;margin:10px 0;color:var(--red)}[hidden]{display:none!important}
+#rt{font-size:18px;color:var(--mut)}#rp{font-size:22px;font-weight:700;margin:10px 0;color:var(--red)}[hidden]{display:none!important}
 #intro,#plabel,#rp{white-space:pre-line}.lk,#rl{display:block;margin-top:14px;padding:12px;border-radius:10px;background:var(--gold);color:#3a1c14;font-weight:700;text-decoration:none;text-align:center}
-</style></head><body><main>
-<h1>🧧 百分百寵物 週年慶紅包雨</h1><div class="sub">全台 18 間門市共用獎池，先抽先得</div>
+.p-img{width:50px;height:50px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:8px}
+</style></head><body>
+<!-- 主视觉圖 -->
+<img src="hero.jpg" class="hero-img" alt="百分百寵物11週年慶滿額抽紅包" onerror="this.style.display='none'">
+<main>
+<h1>🧧 百分百寵物 11週年慶紅包雨</h1><div class="sub">全台 18 間門市共用獎池，先抽先得</div>
 <div class="card">
 <div id="tb" hidden style="background:#fff0c2;color:#5a4300;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px">🧪 測試模式：結果不會扣除正式獎池，也不會留下紀錄。<select id="force" style="margin-top:6px"></select></div>
 <div id="store" style="text-align:center;font-weight:700"></div>
@@ -29,18 +35,17 @@ table{width:100%;font-size:14px;border-collapse:collapse}td{padding:6px 2px;bord
 <div class="card" id="last" hidden><h2>您上次抽到的獎項</h2><div id="lastp" style="font-weight:700;color:var(--red)"></div><a id="lastl" class="lk" hidden target="_blank" rel="noopener">前往領取折價券</a></div>
 <div class="card"><h2>本次獎項</h2><table id="list"></table></div></main>
 <div id="game" hidden><canvas id="cv"></canvas><div id="hud"><span id="tm"></span><span id="cnt"></span></div></div>
-<div id="result" hidden><div class="rbox"><div id="rt"></div><div id="rp"></div><a id="rl" hidden target="_blank" rel="noopener">前往領取折價券</a><button id="rb"></button></div></div>
+<div id="result" hidden><div class="rbox"><div id="rt"></div><img id="rimg" style="max-width:180px;max-height:180px;margin:10px auto;display:none;border-radius:10px;object-fit:contain;"><div id="rp"></div><a id="rl" hidden target="_blank" rel="noopener">前往領取折價券</a><button id="rb"></button></div></div>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,signInAnonymously,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,getDocs,query,where,limit,writeBatch,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import {firebaseConfig} from './firebase-config.js';
-const DUR=10; // 紅包雨秒數（可自行調整）
-const LS={g:k=>{try{return localStorage.getItem(k)}catch(e){return null}},s:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const DUR=10;
 const app=initializeApp(firebaseConfig),au=getAuth(app),db=getFirestore(app);
-const ready=new Promise(r=>onAuthStateChanged(au,u=>u&&r(u)));signInAnonymously(au).catch(()=>{}); // 匿名登入（免費）：只用來識別「這個獎位是誰領的」
+const ready=new Promise(r=>onAuthStateChanged(au,u=>u&&r(u)));signInAnonymously(au).catch(()=>{});
 const $=s=>document.querySelector(s),q=new URLSearchParams(location.search);
-const src=q.get('utm_source')||q.get('ref')||q.get('src')||'direct';  // 追蹤碼只記錄來源，不影響獎池
+const src=q.get('utm_source')||q.get('ref')||q.get('src')||'direct';
 const store=(q.get('s')||q.get('store')||'').toUpperCase(),testCode=(q.get('test_code')||'').toLowerCase();
 let canDraw=!!store||!!testCode,busy=false,PR=[],TL=null;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -53,11 +58,10 @@ else Promise.all([getDoc(doc(db,'stores',store)),getDoc(doc(db,'settings','main'
   if(m.data()?.enabled===false)stop('抽獎活動目前暫停，請洽門市人員');
   else if(!d||d.enabled===false)stop('此門市目前未開放抽獎');else $('#store').textContent='抽獎門市：'+d.name}).catch(()=>{});
 getDocs(collection(db,'prizes')).then(s=>{PR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.qty>0&&b.qty>0?a.qty-b.qty:b.qty-a.qty);
-  $('#list').innerHTML=PR.map(p=>`<tr><td>${esc(p.name)}</td></tr>`).join('');
+  $('#list').innerHTML=PR.map(p=>`<tr><td>${p.img?`<img src="${esc(p.img)}" class="p-img" onerror="this.style.display='none'">`:''}${esc(p.name)}</td></tr>`).join('');
   if(testCode)$('#force').innerHTML='<option value="">隨機（依機率）</option>'+PR.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}).catch(()=>{});
 getDoc(doc(db,'settings','texts')).then(s=>{const t=s.data()||{};if(t.intro!=null)$('#intro').textContent=t.intro;if(t.btn)$('#go').textContent=t.btn}).catch(()=>{});
 
-// 領取一個「預先排定好」的獎位：獎項早已由後台隨機排定，顧客無法挑選，也看不到其他獎位。
 async function claim(){
   const u=await ready;
   const L0=(await getDoc(doc(db,'settings','main'))).data()?.daily_limit??1,L=L0===0?20:L0;
@@ -66,26 +70,30 @@ async function claim(){
   for(let i=1;i<=L;i++){if(!(await getDoc(doc(db,'deviceDay',`${u.uid}_${day}_${i}`))).exists()){k=i;break}}
   if(!k)return{err:`這支手機今天已抽過 ${L} 次，明天再來！`};
   let n=1+Math.floor(Math.random()*pool.size);
-  for(let t=0;t<15;t++,n=n%pool.size+1){   // 獎位被別人搶先領走時，換下一個
+  for(let t=0;t<15;t++,n=n%pool.size+1){
     const b=writeBatch(db);
     b.set(doc(db,'claims',String(n)),{uid:u.uid,store,day,k,src,ts:serverTimestamp()});
     b.set(doc(db,'deviceDay',`${u.uid}_${day}_${k}`),{uid:u.uid});
     try{await b.commit();return{n}}catch(e){if(e.code!=='permission-denied')return{err:'連線失敗，請稍後再試'}}
   }
-  return{err:'紅包已全數送完，或目前人潮較多，請稍後再試。若持續失敗，請確認手機的日期與時間是否正確。'};
+  return{err:'紅包已全數送完，或目前人潮較多，請稍後再試。'};
 }
 function testDraw(){const pool=PR.filter(p=>p.w>0),f=PR.find(p=>p.id===$('#force').value);let p=f;
   if(!p){if(!pool.length)return{err:'尚未設定獎項'};let r=Math.random()*pool.reduce((a,x)=>a+x.w,0);p=pool.find(x=>(r-=x.w)<0)||pool[pool.length-1]}
-  return{ok:1,test:1,prize:p.name,big:p.qty>0&&p.qty<=10,link:(TL.links||{})[p.id]||null}}
-function showResult(d){const R=$('#result'),rb=$('#rb'),rl=$('#rl');R.hidden=false;rb.hidden=false;rl.hidden=true;$('#rp').style.fontSize='';rb.textContent='關閉';rb.onclick=()=>R.hidden=true;
-  if(d.ok){$('#rt').textContent=(d.test?'（測試）':'')+'🎉 恭喜獲得';$('#rp').textContent=d.prize;if(okUrl(d.link)){rl.href=d.link;rl.hidden=false}}
-  else{$('#rt').textContent='很可惜';$('#rp').textContent=d.err||'發生錯誤';$('#rp').style.fontSize='16px'}}
-async function reveal(n){   // 讀取已領取獎位的內容；失敗可重試，不會重複扣次數
-  const rb=$('#rb');$('#result').hidden=false;$('#rt').textContent='結算中…';$('#rp').textContent='';$('#rl').hidden=true;rb.hidden=true;
+  return{ok:1,test:1,prize:p.name,img:p.img||'',link:(TL.links||{})[p.id]||null}}
+function showResult(d){const R=$('#result'),rb=$('#rb'),rl=$('#rl'),rimg=$('#rimg');R.hidden=false;rb.hidden=false;rl.hidden=true;$('#rp').style.fontSize='';rb.textContent='關閉';rb.onclick=()=>R.hidden=true;
+  if(d.ok){
+    $('#rt').textContent=(d.test?'（測試）':'')+'🎉 恭喜獲得';
+    $('#rp').textContent=d.prize;
+    if(d.img){rimg.src=d.img;rimg.style.display='block';}else{rimg.style.display='none';}
+    if(okUrl(d.link)){rl.href=d.link;rl.hidden=false}
+  }else{$('#rt').textContent='很可惜';$('#rp').textContent=d.err\vert{}\vert{}'發生錯誤';rimg.style.display='none';$('#rp').style.fontSize='16px'}}
+async function reveal(n){
+  const rb=$('#rb');$('#result').hidden=false;$('#rt').textContent='結算中…';$('#rp').textContent='';$('#rl').hidden=true;rb.hidden=true;$('#rimg').style.display='none';
   let d=null;try{d=(await getDoc(doc(db,'queue',String(n)))).data()}catch(e){}
   if(!d){$('#rt').textContent='連線失敗';$('#rp').textContent='您的紅包已保留，請重試';rb.hidden=false;rb.textContent='重新取得結果';rb.onclick=()=>reveal(n);return}
-  showResult({ok:1,prize:d.name,link:d.link});loadLast()}
-async function loadLast(){try{const u=await ready;   // 顯示「上次抽到」：同一支手機瀏覽器關掉再開也找得回來
+  showResult({ok:1,prize:d.name,img:d.img||'',link:d.link});loadLast()}
+async function loadLast(){try{const u=await ready;
   const s=await getDocs(query(collection(db,'claims'),where('uid','==',u.uid),limit(20)));
   const c=s.docs.map(d=>({n:d.id,...d.data()})).filter(x=>x.ts).sort((a,b)=>b.ts.toMillis()-a.ts.toMillis())[0];
   if(!c||Date.now()-c.ts.toMillis()>30*864e5)return;
@@ -93,7 +101,6 @@ async function loadLast(){try{const u=await ready;   // 顯示「上次抽到」
   $('#last').hidden=false;$('#lastp').textContent=d.name;const a=$('#lastl');a.hidden=!okUrl(d.link);if(okUrl(d.link))a.href=d.link}catch(e){}}
 loadLast();
 
-// 流程：①領取獎位（此時就決定結果並記錄次數）→ ②倒數＋紅包雨 → ③雨停後揭曉。點到幾個紅包只是遊戲效果。
 $('#go').onclick=async()=>{
   if(busy||!canDraw)return;busy=true;const r=$('#res'),b=$('#go');b.disabled=true;
   const fail=m=>{r.textContent=m;b.disabled=!canDraw;busy=false};
