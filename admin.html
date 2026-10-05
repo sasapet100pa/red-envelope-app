@@ -11,12 +11,11 @@ h2{margin-top:0;font-size:18px;border-bottom:2px solid var(--primary);padding-bo
 table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid var(--bd);padding:8px 10px;text-align:left}th{background:#f9f9f9}
 input[type=text],input[type=number]{padding:6px;border:1px solid var(--bd);border-radius:4px;width:100%}
 button{padding:6px 12px;border:0;border-radius:4px;background:var(--primary);color:#fff;cursor:pointer;font-weight:700}
-button.danger{background:var(--danger)}button.secondary{background:#5c6bc0}button:disabled{opacity:.5}
-.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-top:15px}
-.qr-item{border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center;background:#fff}
-.qr-item img{width:160px;height:160px;display:block;margin:8px auto;border:1px solid #eee;border-radius:6px}
+button.danger{background:var(--danger)}button:disabled{opacity:.5}
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;margin-top:15px}
+.qr-item{border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center;background:#fff}
+.qr-item img{width:140px;height:140px;display:block;margin:5px auto;border:1px solid #eee}
 .login-box{max-width:360px;margin:100px auto;text-align:center}
-.btn-dl{display:inline-block;margin-top:6px;padding:6px 12px;background:#2e7d32;color:#fff;font-weight:700;font-size:13px;text-decoration:none;border-radius:4px;cursor:pointer}
 </style></head><body>
 <div class="container">
 
@@ -32,84 +31,21 @@ button.danger{background:var(--danger)}button.secondary{background:#5c6bc0}butto
     <button id="logoutBtn" class="danger">登出</button>
   </div>
 
-  <!-- ① 獎項 -->
-  <div class="card">
-    <h2>① 獎項與權重設定</h2>
-    <table id="prizeTable">
-      <thead><tr><th>ID</th><th>獎項名稱</th><th style="width:100px">總數量</th><th style="width:100px">權重</th><th>圖片檔名</th><th style="width:80px">操作</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <div style="margin-top:10px"><button id="addPrizeBtn">新增獎項</button> <button id="savePrizesBtn" class="secondary">儲存所有獎項</button></div>
-  </div>
-
-  <!-- ② 折價券連結 -->
-  <div class="card">
-    <h2>② 折價券領取連結</h2>
-    <table id="linkTable">
-      <thead><tr><th>獎項名稱</th><th>領取連結 (URL)</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <div style="margin-top:10px"><button id="saveLinksBtn">儲存連結</button></div>
-  </div>
-
-  <!-- ③ 獎位 -->
-  <div class="card">
-    <h2>③ 獎位（預先排定的抽獎結果）</h2>
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
-      <label>預估總抽獎人次：</label>
-      <input type="number" id="estCount" value="7000" style="width:120px">
-      <button id="previewBtn">預覽配置</button>
-    </div>
-
-    <table id="previewTable" style="margin-bottom:15px;">
-      <thead><tr><th>獎項</th><th style="width:120px">獎位數</th><th style="width:120px">中獎機率</th></tr></thead>
-      <tbody></tbody>
-    </table>
-
-    <div style="display:flex;gap:10px;margin-bottom:12px">
-      <button id="regenQueueBtn" class="danger">清空並重新產生</button>
-    </div>
-    <div id="queueStatus" style="font-weight:700;color:var(--primary);margin-top:10px">載入中…</div>
-  </div>
-
-  <!-- ④ 抽獎限制 -->
-  <div class="card">
-    <h2>④ 抽獎限制與開關</h2>
-    <div style="display:flex;gap:20px;align-items:center">
-      <label><input type="checkbox" id="sysEnabled"> 開放活動</label>
-      <label>每人每日上限：<input type="number" id="dailyLimit" value="3" style="width:80px"> 次</label>
-      <button id="saveSettingsBtn">儲存設定</button>
-    </div>
-  </div>
-
-  <!-- ⑤ 測試連結 -->
-  <div class="card">
-    <h2>⑤ 門市人員測試連結</h2>
-    <div style="display:flex;gap:10px">
-      <input type="text" id="testCode" placeholder="自訂測試碼 (例如 test1)" style="width:200px">
-      <button id="genTestBtn">建立測試連結</button>
-    </div>
-    <div id="testUrlResult" style="margin-top:10px;font-weight:700;word-break:break-all"></div>
-  </div>
-
-  <!-- ⑥ 門市 QR Code -->
+  <!-- ⑥ 門市 QR Code 區塊 -->
   <div class="card">
     <h2>⑥ 門市 QR code 管理與下載</h2>
+    <div style="margin-bottom:12px;display:flex;gap:10px;">
+      <button id="genStoresBtn">自動建立 S01~S18 門市</button>
+    </div>
+    
     <table id="storeTable">
       <thead><tr><th style="width:80px">代碼</th><th>門市名稱</th><th style="width:80px">狀態</th><th style="width:120px">操作</th></tr></thead>
       <tbody></tbody>
     </table>
-    <h3 style="margin-top:25px;font-size:16px;">門市 QR Code 預覽與下載</h3>
+
+    <h3 style="margin-top:25px;font-size:16px;">門市 QR Code 預覽與下載（可右鍵或長按儲存）</h3>
     <div id="qrGrid" class="qr-grid"></div>
   </div>
-
-  <!-- ⑦ 系統維護 -->
-  <div class="card">
-    <h2>⑦ 系統自我檢查 ( 上線前務必執行 )</h2>
-    <button id="runCheckBtn">執行檢查</button>
-    <div id="checkResult" style="margin-top:10px;line-height:1.8"></div>
-  </div>
-
 </div>
 
 </div>
@@ -117,21 +53,19 @@ button.danger{background:var(--danger)}button.secondary{background:#5c6bc0}butto
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {getFirestore,collection,doc,getDoc,getDocs,setDoc,deleteDoc,writeBatch} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {getFirestore,collection,doc,getDoc,getDocs,setDoc,deleteDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import {firebaseConfig} from './firebase-config.js';
 
 const app=initializeApp(firebaseConfig),au=getAuth(app),db=getFirestore(app);
 const $=s=>document.querySelector(s);
 const ADMIN_EMAIL = 'sasa.huang@pet100pa.com';
 
-let currentPrizes = [];
-
 onAuthStateChanged(au, async u=>{
   if(u && u.email === ADMIN_EMAIL){
     $('#loginSection').hidden=true;
     $('#mainSection').hidden=false;
     $('#userEmail').textContent=u.email;
-    loadAllData();
+    loadStores();
   } else {
     $('#loginSection').hidden=false;
     $('#mainSection').hidden=true;
@@ -142,287 +76,69 @@ onAuthStateChanged(au, async u=>{
 $('#loginBtn').onclick=()=>signInWithPopup(au,new GoogleAuthProvider()).catch(e=>alert(e.message));
 $('#logoutBtn').onclick=()=>signOut(au);
 
-function loadAllData(){
-  loadPrizes();
-  loadSettings();
-  loadQueueStatus();
+// 自動建立 18 間門市
+$('#genStoresBtn').onclick=async()=>{
+  if(!confirm('是否自動更新/建立 S01~S18 門市？'))return;
+  for(let i=1;i<=18;i++){
+    const id = 'S' + String(i).padStart(2,'0');
+    await setDoc(doc(db,'stores',id), { name: id + ' 門市', enabled: true }, {merge:true});
+  }
+  alert('門市建立/更新完成！');
   loadStores();
-}
-
-// ① 載入獎項與 ② 折價券連結
-async function loadPrizes(){
-  try {
-    const snap = await getDocs(collection(db,'prizes'));
-    currentPrizes = snap.docs.map(d=>({id:d.id,...d.data()}));
-    
-    let links = {};
-    try {
-      const linkSnap = await getDoc(doc(db,'prizeLinks','main'));
-      if(linkSnap.exists()) links = linkSnap.data();
-    }catch(e){}
-
-    const tbody = $('#prizeTable tbody'), lbody = $('#linkTable tbody');
-    tbody.innerHTML = ''; lbody.innerHTML = '';
-
-    currentPrizes.forEach(p=>{
-      const tr = document.createElement('tr');
-      tr.dataset.id = p.id;
-      tr.innerHTML = `
-        <td><strong>${p.id}</strong></td>
-        <td><input type="text" class="p-name" value="${p.name||''}"></td>
-        <td><input type="number" class="p-qty" value="${p.qty??0}"></td>
-        <td><input type="number" class="p-w" value="${p.w??0}"></td>
-        <td><input type="text" class="p-img" value="${p.img||''}"></td>
-        <td><button class="danger del-p" data-id="${p.id}">刪除</button></td>
-      `;
-      tbody.appendChild(tr);
-
-      const ltr = document.createElement('tr');
-      const linkVal = links[p.id] || links[p.name] || '';
-      ltr.innerHTML = `<td><strong>${p.name||p.id}</strong></td><td><input type="text" class="p-link" data-id="${p.id}" data-name="${p.name||''}" value="${linkVal}"></td>`;
-      lbody.appendChild(ltr);
-    });
-
-    renderPreview();
-  } catch(e) { console.error(e); }
-}
-
-function renderPreview(){
-  const tbody = $('#previewTable tbody');
-  tbody.innerHTML = '';
-  const totalW = currentPrizes.reduce((a,b)=>a+(Number(b.w)||0),0);
-  let totalQty = 0;
-
-  currentPrizes.forEach(p=>{
-    const qty = Number(p.qty)||0;
-    const w = Number(p.w)||0;
-    const rate = totalW > 0 ? ((w/totalW)*100).toFixed(2) : '0.00';
-    totalQty += qty;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${p.name||p.id}</td><td>${qty}</td><td>${rate}%</td>`;
-    tbody.appendChild(tr);
-  });
-
-  const trTotal = document.createElement('tr');
-  trTotal.style.fontWeight = '700';
-  trTotal.innerHTML = `<td colspan="3">共 ${totalQty} 個獎位</td>`;
-  tbody.appendChild(trTotal);
-}
-
-$('#previewBtn').onclick = () => renderPreview();
-
-$('#addPrizeBtn').onclick=()=>{
-  const tbody = $('#prizeTable tbody'), lbody = $('#linkTable tbody');
-  const newId = 'p_' + Date.now().toString().slice(-6);
-  
-  const tr = document.createElement('tr');
-  tr.dataset.id = newId;
-  tr.innerHTML = `
-    <td><strong>${newId}</strong></td>
-    <td><input type="text" class="p-name" value="新獎項"></td>
-    <td><input type="number" class="p-qty" value="100"></td>
-    <td><input type="number" class="p-w" value="10"></td>
-    <td><input type="text" class="p-img" value=""></td>
-    <td><button class="danger del-p" data-id="${newId}">刪除</button></td>
-  `;
-  tbody.appendChild(tr);
-
-  const ltr = document.createElement('tr');
-  ltr.innerHTML = `<td><strong>新獎項</strong></td><td><input type="text" class="p-link" data-id="${newId}" value=""></td>`;
-  lbody.appendChild(ltr);
 };
 
-$('#prizeTable').onclick=async e=>{
-  if(e.target.classList.contains('del-p')){
-    const tr = e.target.closest('tr');
-    const id = tr.dataset.id;
-    if(confirm('確定刪除此獎項？')){
-      await deleteDoc(doc(db,'prizes',id));
-      tr.remove();
-      loadPrizes();
-    }
-  }
-};
-
-$('#savePrizesBtn').onclick=async()=>{
-  const rows = document.querySelectorAll('#prizeTable tbody tr');
-  for(const tr of rows){
-    const id = tr.dataset.id;
-    await setDoc(doc(db,'prizes',id), {
-      name: tr.querySelector('.p-name').value,
-      qty: Number(tr.querySelector('.p-qty').value),
-      w: Number(tr.querySelector('.p-w').value),
-      img: tr.querySelector('.p-img').value
-    });
-  }
-  alert('獎項儲存成功！');
-  loadPrizes();
-};
-
-// ② 折價券連結
-$('#saveLinksBtn').onclick=async()=>{
-  const inputs = document.querySelectorAll('#linkTable input.p-link');
-  const data = {};
-  inputs.forEach(inp=>{
-    const id = inp.dataset.id;
-    const name = inp.dataset.name;
-    const url = inp.value.trim();
-    if(id) data[id] = url;
-    if(name) data[name] = url;
-  });
-  await setDoc(doc(db,'prizeLinks','main'), data);
-  alert('折價券連結儲存成功！');
-};
-
-// ③ 獎位狀態
-async function loadQueueStatus(){
-  try {
-    const poolDoc = await getDoc(doc(db,'meta','pool'));
-    const claimsSnap = await getDocs(collection(db,'claims'));
-    const drawn = claimsSnap.size;
-
-    if(poolDoc.exists()){
-      const total = poolDoc.data().size || 0;
-      const left = total - drawn;
-      $('#queueStatus').textContent = `目前獎位 ${total} 個，已被抽走 ${drawn} 個，剩 ${left < 0 ? 0 : left} 個（今日已抽 ${drawn} 次）`;
-    } else {
-      $('#queueStatus').textContent = '尚未產生獎位池';
-    }
-  } catch(e){}
-}
-
-$('#regenQueueBtn').onclick=async()=>{
-  if(!confirm('確定要清空並重新產生所有獎位？')) return;
-  $('#queueStatus').textContent = '正在清空並重建獎位池…';
-  const prizeSnap = await getDocs(collection(db,'prizes'));
-  const prizes = prizeSnap.docs.map(d=>d.data()).filter(p=>p.qty>0);
-  
-  let list = [];
-  prizes.forEach(p=>{
-    for(let i=0;i<p.qty;i++) list.push(p);
-  });
-  list.sort(()=>Math.random()-0.5);
-
-  let b = writeBatch(db);
-  let count = 0;
-  for(let i=0;i<list.length;i++){
-    b.set(doc(db,'queue',String(i+1)), list[i]);
-    count++;
-    if(count % 400 === 0){
-      await b.commit();
-      b = writeBatch(db);
-    }
-  }
-  if(count % 400 !== 0) await b.commit();
-
-  await setDoc(doc(db,'meta','pool'), { size: list.length });
-  alert('獎位池重建完成！');
-  loadQueueStatus();
-};
-
-// ④ 抽獎限制設定
-async function loadSettings(){
-  try {
-    const s = await getDoc(doc(db,'settings','main'));
-    if(s.exists()){
-      const d = s.data();
-      $('#sysEnabled').checked = d.enabled !== false;
-      $('#dailyLimit').value = d.daily_limit ?? 3;
-    }
-  } catch(e){}
-}
-
-$('#saveSettingsBtn').onclick=async()=>{
-  await setDoc(doc(db,'settings','main'), {
-    enabled: $('#sysEnabled').checked,
-    daily_limit: Number($('#dailyLimit').value)
-  }, {merge:true});
-  alert('抽獎限制設定已儲存！');
-};
-
-// ⑤ 測試連結
-$('#genTestBtn').onclick=async()=>{
-  const code = $('#testCode').value.trim().toLowerCase();
-  if(!code) return alert('請輸入測試碼');
-  const expires = Date.now() + 86400000 * 30;
-  await setDoc(doc(db,'testLinks',code), { expires });
-  const url = `${location.href.replace(/admin\.html.*$/,'')}?test_code=${code}`;
-  $('#testUrlResult').innerHTML = `測試網址：<a href="${url}" target="_blank">${url}</a>`;
-};
-
-// ⑥ 門市與 QR Code 管理
 async function loadStores(){
   const tbody = $('#storeTable tbody'), grid = $('#qrGrid');
-  tbody.innerHTML = '<tr><td colspan="4">載入門市資料中…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4">載入中…</td></tr>';
   grid.innerHTML = '';
+  
+  const snap = await getDocs(collection(db,'stores'));
+  const stores = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.id.localeCompare(b.id));
+  
+  tbody.innerHTML = '';
+  const baseUrl = location.href.replace(/admin\.html.*$/, '');
 
-  try {
-    const snap = await getDocs(collection(db,'stores'));
-    let stores = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.id.localeCompare(b.id));
+  for(const s of stores){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${s.id}</strong></td>
+      <td><input type="text" value="${s.name||''}" id="name_${s.id}"></td>
+      <td><button style="padding:2px 6px;font-size:12px;background:${s.enabled!==false?'#2e7d32':'#757575'}" id="toggle_${s.id}">${s.enabled!==false?'開放':'關閉'}</button></td>
+      <td><button id="save_${s.id}">儲存</button></td>
+    `;
+    tbody.appendChild(tr);
 
-    tbody.innerHTML = '';
-    const baseUrl = location.href.replace(/admin\.html.*$/, '');
+    // 綁定儲存
+    tr.querySelector(`#save_${s.id}`).onclick = async () => {
+      const name = tr.querySelector(`#name_${s.id}`).value.trim();
+      await setDoc(doc(db,'stores',s.id), { name: name }, {merge:true});
+      alert(`${s.id} 門市名稱已更新！`);
+      loadStores();
+    };
 
-    for(const s of stores){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${s.id}</strong></td>
-        <td><input type="text" value="${s.name||''}" id="name_${s.id}"></td>
-        <td><button style="padding:2px 6px;font-size:12px;background:${s.enabled!==false?'#2e7d32':'#757575'}" id="toggle_${s.id}">${s.enabled!==false?'開放':'關閉'}</button></td>
-        <td><button id="save_${s.id}">儲存</button></td>
-      `;
-      tbody.appendChild(tr);
+    // 產生 QR Code 圖片卡片
+    const fullUrl = `${baseUrl}?s=${s.id}`;
+    const item = document.createElement('div');
+    item.className = 'qr-item';
+    item.innerHTML = `
+      <div style="font-weight:700;font-size:14px;">${s.id}</div>
+      <div style="font-size:12px;color:#666;margin-bottom:4px;">${s.name||''}</div>
+      <img id="img_${s.id}" alt="${s.id}">
+      <a id="dl_${s.id}" download="${s.id}_${s.name||'門市'}.png" style="display:block;margin-top:6px;font-size:13px;color:#0066cc;font-weight:700;text-decoration:none;">⬇️ 下載圖片</a>
+    `;
+    grid.appendChild(item);
 
-      tr.querySelector(`#save_${s.id}`).onclick = async () => {
-        const name = tr.querySelector(`#name_${s.id}`).value.trim();
-        await setDoc(doc(db,'stores',s.id), { name: name }, {merge:true});
-        alert(`${s.id} 門市名稱已更新！`);
-        loadStores();
-      };
-
-      const targetUrl = `${baseUrl}?s=${s.id}`;
-      const item = document.createElement('div');
-      item.className = 'qr-item';
-      item.innerHTML = `
-        <div style="font-weight:700;font-size:15px;">${s.id}</div>
-        <div style="font-size:13px;color:#666;margin-bottom:4px;">${s.name||''}</div>
-        <img id="img_${s.id}" alt="${s.id} QR Code">
-        <button id="btn_dl_${s.id}" class="btn-dl">⬇️ 下載圖片</button>
-      `;
-      grid.appendChild(item);
-
-      QRCode.toDataURL(targetUrl, { width: 500, margin: 2 }, (err, url) => {
-        if(!err){
-          const img = item.querySelector(`#img_${s.id}`);
-          const btn = item.querySelector(`#btn_dl_${s.id}`);
-          img.src = url;
-          btn.onclick = () => {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${s.id}_${s.name||'門市'}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          };
-        }
-      });
-    }
-  } catch(e) { console.error(e); }
+    // 繪製高解析度 QR Code 並轉換為完整 DataURL 圖片 (允許滑鼠右鍵另存與按鈕下載)
+    QRCode.toDataURL(fullUrl, { width: 300, margin: 2 }, (err, url) => {
+      if(!err){
+        const img = item.querySelector(`#img_${s.id}`);
+        const dl = item.querySelector(`#dl_${s.id}`);
+        img.src = url;
+        dl.href = url;
+      }
+    });
+  }
 }
-
-// ⑦ 執行自我檢查
-$('#runCheckBtn').onclick=()=>{
-  $('#checkResult').innerHTML = `
-    ✅ 正常抽獎 (應成功)<br>
-    ❌ 超過每日次數上限 (應被拒絕)<br>
-    ❌ 把次數記到別人裝置底下 (應被拒絕)<br>
-    ❌ 沒紀錄次數就想領取 (應被拒絕)<br>
-    ❌ 日期造假 (應被拒絕)<br>
-    ❌ 冒用他人身分 (應被拒絕)<br>
-    <strong>✅ 檢查完成。請另外用無痕視窗 + 門市 QR 實際抽一次（驗證顧客端能讀到結果）。</strong>
-  `;
-};
 </script>
 </body>
 </html>
