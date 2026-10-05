@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>紅包雨後台管理</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root{--bg:#f4f6f8;--card:#fff;--tx:#222;--mut:#666;--primary:#0066cc;--danger:#d32f2f;--bd:#e0e0e0}
 *{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--tx);padding:20px 10px}
@@ -8,14 +9,13 @@
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
 h2{margin-top:0;font-size:18px;border-bottom:2px solid var(--primary);padding-bottom:8px;color:var(--primary)}
 table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid var(--bd);padding:8px 10px;text-align:left}th{background:#f9f9f9}
-input[type=text]{padding:6px;border:1px solid var(--bd);border-radius:4px;width:100%}
+input[type=text],input[type=number]{padding:6px;border:1px solid var(--bd);border-radius:4px;width:100%}
 button{padding:6px 12px;border:0;border-radius:4px;background:var(--primary);color:#fff;cursor:pointer;font-weight:700}
-button.danger{background:var(--danger)}
-.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-top:15px}
-.qr-item{border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center;background:#fff}
-.qr-item img{width:160px;height:160px;display:block;margin:8px auto;border:1px solid #eee;border-radius:6px}
+button.danger{background:var(--danger)}button:disabled{opacity:.5}
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px;margin-top:15px}
+.qr-item{border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center;background:#fff}
+.qr-item img{width:140px;height:140px;display:block;margin:5px auto;border:1px solid #eee}
 .login-box{max-width:360px;margin:100px auto;text-align:center}
-.btn-dl{display:inline-block;margin-top:6px;padding:6px 12px;background:#2e7d32;color:#fff;font-weight:700;font-size:13px;text-decoration:none;border-radius:4px}
 </style></head><body>
 <div class="container">
 
@@ -43,7 +43,7 @@ button.danger{background:var(--danger)}
       <tbody></tbody>
     </table>
 
-    <h3 style="margin-top:25px;font-size:16px;">門市 QR Code 圖片（點按鈕下載 / 滑鼠右鍵另存 / 手機長按儲存）</h3>
+    <h3 style="margin-top:25px;font-size:16px;">門市 QR Code 預覽與下載（可右鍵或長按儲存）</h3>
     <div id="qrGrid" class="qr-grid"></div>
   </div>
 </div>
@@ -53,7 +53,7 @@ button.danger{background:var(--danger)}
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {getFirestore,collection,doc,getDocs,setDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {getFirestore,collection,doc,getDoc,getDocs,setDoc,deleteDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import {firebaseConfig} from './firebase-config.js';
 
 const app=initializeApp(firebaseConfig),au=getAuth(app),db=getFirestore(app);
@@ -116,21 +116,27 @@ async function loadStores(){
       loadStores();
     };
 
-    // 門市完整連結
-    const targetUrl = encodeURIComponent(`${baseUrl}?s=${s.id}`);
-    // 使用 Google 官方高解析度 QR Code API 圖片網址 (400x400)
-    const qrImgUrl = `https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl=${targetUrl}&choe=UTF-8`;
-
-    // 渲染卡片
+    // 產生 QR Code 圖片卡片
+    const fullUrl = `${baseUrl}?s=${s.id}`;
     const item = document.createElement('div');
     item.className = 'qr-item';
     item.innerHTML = `
-      <div style="font-weight:700;font-size:15px;">${s.id}</div>
-      <div style="font-size:13px;color:#666;margin-bottom:4px;">${s.name||''}</div>
-      <img src="${qrImgUrl}" alt="${s.id} QR Code" title="點右鍵另存圖片或長按儲存">
-      <a href="${qrImgUrl}" target="_blank" download="${s.id}_${s.name||'門市'}.png" class="btn-dl">⬇️ 下載圖片</a>
+      <div style="font-weight:700;font-size:14px;">${s.id}</div>
+      <div style="font-size:12px;color:#666;margin-bottom:4px;">${s.name||''}</div>
+      <img id="img_${s.id}" alt="${s.id}">
+      <a id="dl_${s.id}" download="${s.id}_${s.name||'門市'}.png" style="display:block;margin-top:6px;font-size:13px;color:#0066cc;font-weight:700;text-decoration:none;">⬇️ 下載圖片</a>
     `;
     grid.appendChild(item);
+
+    // 繪製高解析度 QR Code 並轉換為完整 DataURL 圖片 (允許滑鼠右鍵另存與按鈕下載)
+    QRCode.toDataURL(fullUrl, { width: 300, margin: 2 }, (err, url) => {
+      if(!err){
+        const img = item.querySelector(`#img_${s.id}`);
+        const dl = item.querySelector(`#dl_${s.id}`);
+        img.src = url;
+        dl.href = url;
+      }
+    });
   }
 }
 </script>
