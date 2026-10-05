@@ -106,7 +106,7 @@ button.danger{background:#7209b7}
   <div class="card">
     <h2>⑥ 門市 QR code 管理與下載</h2>
     <div style="margin-bottom:12px">
-      <button id="initStoresBtn">自動建立 S01~S18 門市</button>
+      <button id="initStoresBtn">自動建立/重新整理 S01~S18 門市</button>
     </div>
     <table id="storesTable">
       <thead><tr><th style="width:80px">代碼</th><th>門市名稱</th><th style="width:80px">狀態</th><th style="width:90px">操作</th></tr></thead>
@@ -166,36 +166,44 @@ function loadAllData() {
   loadStores();
 }
 
-// ① 獎項管理
+// ① 載入獎項與 ② 折價券連結
 async function loadPrizes() {
-  const snap = await getDocs(collection(db, 'prizes'));
-  PR = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  
-  const tbody = $('#prizesTable tbody'), lbody = $('#linksTable tbody');
-  tbody.innerHTML = ''; lbody.innerHTML = '';
+  try {
+    const snap = await getDocs(collection(db, 'prizes'));
+    PR = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  const linkSnap = await getDoc(doc(db, 'prizeLinks', 'main'));
-  const links = linkSnap.exists() ? linkSnap.data() : {};
+    let links = {};
+    try {
+      const linkSnap = await getDoc(doc(db, 'prizeLinks', 'main'));
+      if (linkSnap.exists()) links = linkSnap.data();
+    } catch(e){}
 
-  PR.forEach(p => {
-    const tr = document.createElement('tr');
-    tr.dataset.id = p.id;
-    tr.innerHTML = `
-      <td><strong>${p.id}</strong></td>
-      <td><input type="text" class="p-name" value="${p.name || ''}"></td>
-      <td><input type="number" class="p-qty" value="${p.qty ?? 0}"></td>
-      <td><input type="number" class="p-w" value="${p.w ?? 0}"></td>
-      <td><input type="text" class="p-img" value="${p.img || ''}"></td>
-      <td><button class="danger del-p">刪除</button></td>
-    `;
-    tbody.appendChild(tr);
+    const tbody = $('#prizesTable tbody'), lbody = $('#linksTable tbody');
+    tbody.innerHTML = ''; lbody.innerHTML = '';
 
-    const ltr = document.createElement('tr');
-    ltr.innerHTML = `<td><strong>${p.name || p.id}</strong></td><td><input type="text" id="link_${p.id}" value="${links[p.id] || ''}"></td>`;
-    lbody.appendChild(ltr);
-  });
+    PR.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = p.id;
+      tr.innerHTML = `
+        <td><strong>${p.id}</strong></td>
+        <td><input type="text" class="p-name" value="${p.name || ''}"></td>
+        <td><input type="number" class="p-qty" value="${p.qty ?? 0}"></td>
+        <td><input type="number" class="p-w" value="${p.w ?? 0}"></td>
+        <td><input type="text" class="p-img" value="${p.img || ''}"></td>
+        <td><button class="danger del-p">刪除</button></td>
+      `;
+      tbody.appendChild(tr);
 
-  renderPreview();
+      const ltr = document.createElement('tr');
+      const linkVal = links[p.id] || links[p.name] || '';
+      ltr.innerHTML = `<td><strong>${p.name || p.id}</strong></td><td><input type="text" class="p-link" data-id="${p.id}" value="${linkVal}"></td>`;
+      lbody.appendChild(ltr);
+    });
+
+    renderPreview();
+  } catch(e) {
+    console.error('Prizes error:', e);
+  }
 }
 
 function renderPreview() {
@@ -225,7 +233,8 @@ $('#previewBtn').onclick = () => renderPreview();
 
 $('#addPrizeBtn').onclick = () => {
   const newId = 'p_' + Date.now().toString().slice(-6);
-  const tbody = $('#prizesTable tbody');
+  const tbody = $('#prizesTable tbody'), lbody = $('#linksTable tbody');
+  
   const tr = document.createElement('tr');
   tr.dataset.id = newId;
   tr.innerHTML = `
@@ -237,6 +246,10 @@ $('#addPrizeBtn').onclick = () => {
     <td><button class="danger del-p">刪除</button></td>
   `;
   tbody.appendChild(tr);
+
+  const ltr = document.createElement('tr');
+  ltr.innerHTML = `<td><strong>新獎項</strong></td><td><input type="text" class="p-link" data-id="${newId}" value=""></td>`;
+  lbody.appendChild(ltr);
 };
 
 $('#prizesTable').onclick = async e => {
@@ -266,13 +279,13 @@ $('#savePrizesBtn').onclick = async () => {
   loadPrizes();
 };
 
-// ② 折價券連結
+// ② 儲存折價券連結
 $('#saveLinksBtn').onclick = async () => {
-  const inputs = document.querySelectorAll('#linksTable input');
+  const inputs = document.querySelectorAll('#linksTable input.p-link');
   const data = {};
   inputs.forEach(inp => {
-    const id = inp.id.replace('link_', '');
-    data[id] = inp.value.trim();
+    const id = inp.dataset.id;
+    if(id) data[id] = inp.value.trim();
   });
   await setDoc(doc(db, 'prizeLinks', 'main'), data);
   alert('領取連結已成功儲存！');
@@ -280,17 +293,19 @@ $('#saveLinksBtn').onclick = async () => {
 
 // ③ 獎位管理
 async function loadQueueInfo() {
-  const poolSnap = await getDoc(doc(db, 'meta', 'pool'));
-  const claimsSnap = await getDocs(collection(db, 'claims'));
-  const drawn = claimsSnap.size;
+  try {
+    const poolSnap = await getDoc(doc(db, 'meta', 'pool'));
+    const claimsSnap = await getDocs(collection(db, 'claims'));
+    const drawn = claimsSnap.size;
 
-  if (poolSnap.exists()) {
-    const total = poolSnap.data().size || 0;
-    const left = total - drawn;
-    $('#queueInfo').textContent = `目前獎位 ${total} 個，已被抽走 ${drawn} 個，剩 ${left < 0 ? 0 : left} 個（今日已抽 ${drawn} 次）`;
-  } else {
-    $('#queueInfo').textContent = '尚未產生獎位池';
-  }
+    if (poolSnap.exists()) {
+      const total = poolSnap.data().size || 0;
+      const left = total - drawn;
+      $('#queueInfo').textContent = `目前獎位 ${total} 個，已被抽走 ${drawn} 個，剩 ${left < 0 ? 0 : left} 個（今日已抽 ${drawn} 次）`;
+    } else {
+      $('#queueInfo').textContent = '尚未產生獎位池';
+    }
+  } catch(e){}
 }
 
 $('#regenQueueBtn').onclick = async () => {
@@ -325,12 +340,14 @@ $('#regenQueueBtn').onclick = async () => {
 
 // ④ 限制與設定
 async function loadSettings() {
-  const s = await getDoc(doc(db, 'settings', 'main'));
-  if (s.exists()) {
-    const d = s.data();
-    $('#sysEnabled').checked = d.enabled !== false;
-    $('#dailyLimit').value = d.daily_limit ?? 3;
-  }
+  try {
+    const s = await getDoc(doc(db, 'settings', 'main'));
+    if (s.exists()) {
+      const d = s.data();
+      $('#sysEnabled').checked = d.enabled !== false;
+      $('#dailyLimit').value = d.daily_limit ?? 3;
+    }
+  } catch(e){}
 }
 
 $('#saveSettingsBtn').onclick = async () => {
@@ -353,69 +370,80 @@ $('#genTestLinkBtn').onclick = async () => {
 
 // ⑥ 門市與 QR Code
 $('#initStoresBtn').onclick = async () => {
-  if (!confirm('是否自動建立 S01~S18 門市資料？')) return;
   for (let i = 1; i <= 18; i++) {
     const id = 'S' + String(i).padStart(2, '0');
     await setDoc(doc(db, 'stores', id), { name: id + ' 門市', enabled: true }, { merge: true });
   }
-  alert('S01~S18 門市建立成功！');
   loadStores();
 };
 
 async function loadStores() {
   const tbody = $('#storesTable tbody'), grid = $('#qrGrid');
-  tbody.innerHTML = '<tr><td colspan="4">載入中…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4">載入門市資料中…</td></tr>';
   grid.innerHTML = '';
 
-  const snap = await getDocs(collection(db, 'stores'));
-  const stores = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id));
+  try {
+    const snap = await getDocs(collection(db, 'stores'));
+    let stores = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id));
 
-  tbody.innerHTML = '';
-  const baseUrl = location.href.replace(/admin\.html.*$/, '');
-
-  for (const s of stores) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${s.id}</strong></td>
-      <td><input type="text" value="${s.name || ''}" id="sname_${s.id}"></td>
-      <td><button style="padding:2px 6px;font-size:12px;background:${s.enabled !== false ? '#2e7d32' : '#757575'}" id="stoggle_${s.id}">${s.enabled !== false ? '開放' : '關閉'}</button></td>
-      <td><button id="ssave_${s.id}">儲存</button></td>
-    `;
-    tbody.appendChild(tr);
-
-    tr.querySelector(`#ssave_${s.id}`).onclick = async () => {
-      const name = tr.querySelector(`#sname_${s.id}`).value.trim();
-      await setDoc(doc(db, 'stores', s.id), { name: name }, { merge: true });
-      alert(`${s.id} 門市已更新！`);
-      loadStores();
-    };
-
-    const targetUrl = `${baseUrl}?s=${s.id}`;
-    const card = document.createElement('div');
-    card.className = 'qr-card';
-    card.innerHTML = `
-      <div style="font-weight:700">${s.id}</div>
-      <div style="font-size:13px;color:var(--mut)">${s.name || ''}</div>
-      <img id="qrimg_${s.id}" alt="${s.id} QR Code">
-      <button id="dl_${s.id}" class="sec" style="font-size:12px;padding:4px 8px">下載圖片</button>
-    `;
-    grid.appendChild(card);
-
-    QRCode.toDataURL(targetUrl, { width: 500, margin: 2 }, (err, url) => {
-      if (!err) {
-        const img = card.querySelector(`#qrimg_${s.id}`);
-        const btn = card.querySelector(`#dl_${s.id}`);
-        img.src = url;
-        btn.onclick = () => {
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${s.id}_${s.name || '門市'}.png`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        };
+    if(stores.length === 0){
+      for (let i = 1; i <= 18; i++) {
+        const id = 'S' + String(i).padStart(2, '0');
+        await setDoc(doc(db, 'stores', id), { name: id + ' 門市', enabled: true }, { merge: true });
       }
-    });
+      const snap2 = await getDocs(collection(db, 'stores'));
+      stores = snap2.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id));
+    }
+
+    tbody.innerHTML = '';
+    const baseUrl = location.href.replace(/admin\.html.*$/, '');
+
+    for (const s of stores) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${s.id}</strong></td>
+        <td><input type="text" value="${s.name || ''}" id="sname_${s.id}"></td>
+        <td><button style="padding:2px 6px;font-size:12px;background:${s.enabled !== false ? '#2e7d32' : '#757575'}" id="stoggle_${s.id}">${s.enabled !== false ? '開放' : '關閉'}</button></td>
+        <td><button id="ssave_${s.id}">儲存</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      tr.querySelector(`#ssave_${s.id}`).onclick = async () => {
+        const name = tr.querySelector(`#sname_${s.id}`).value.trim();
+        await setDoc(doc(db, 'stores', s.id), { name: name }, { merge: true });
+        alert(`${s.id} 門市已更新！`);
+        loadStores();
+      };
+
+      const targetUrl = `${baseUrl}?s=${s.id}`;
+      const card = document.createElement('div');
+      card.className = 'qr-card';
+      card.innerHTML = `
+        <div style="font-weight:700">${s.id}</div>
+        <div style="font-size:13px;color:var(--mut)">${s.name || ''}</div>
+        <img id="qrimg_${s.id}" alt="${s.id} QR Code">
+        <button id="dl_${s.id}" class="sec" style="font-size:12px;padding:4px 8px">下載圖片</button>
+      `;
+      grid.appendChild(card);
+
+      QRCode.toDataURL(targetUrl, { width: 500, margin: 2 }, (err, url) => {
+        if (!err) {
+          const img = card.querySelector(`#qrimg_${s.id}`);
+          const btn = card.querySelector(`#dl_${s.id}`);
+          img.src = url;
+          btn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${s.id}_${s.name || '門市'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          };
+        }
+      });
+    }
+  } catch(e) {
+    console.error('Stores load error:', e);
   }
 }
 
