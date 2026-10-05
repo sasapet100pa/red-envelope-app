@@ -149,7 +149,7 @@ function loadAllData(){
   loadStores();
 }
 
-// ① 載入獎項與算機率
+// ① 載入獎項與 ② 折價券連結
 async function loadPrizes(){
   try {
     const snap = await getDocs(collection(db,'prizes'));
@@ -179,7 +179,7 @@ async function loadPrizes(){
 
       const ltr = document.createElement('tr');
       const linkVal = links[p.id] || links[p.name] || '';
-      ltr.innerHTML = `<td><strong>${p.name||p.id}</strong></td><td><input type="text" class="p-link" data-id="${p.id}" value="${linkVal}"></td>`;
+      ltr.innerHTML = `<td><strong>${p.name||p.id}</strong></td><td><input type="text" class="p-link" data-id="${p.id}" data-name="${p.name||''}" value="${linkVal}"></td>`;
       lbody.appendChild(ltr);
     });
 
@@ -266,7 +266,10 @@ $('#saveLinksBtn').onclick=async()=>{
   const data = {};
   inputs.forEach(inp=>{
     const id = inp.dataset.id;
-    if(id) data[id] = inp.value.trim();
+    const name = inp.dataset.name;
+    const url = inp.value.trim();
+    if(id) data[id] = url;
+    if(name) data[name] = url;
   });
   await setDoc(doc(db,'prizeLinks','main'), data);
   alert('折價券連結儲存成功！');
@@ -358,15 +361,6 @@ async function loadStores(){
     const snap = await getDocs(collection(db,'stores'));
     let stores = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.id.localeCompare(b.id));
 
-    if(stores.length === 0){
-      for (let i = 1; i <= 18; i++) {
-        const id = 'S' + String(i).padStart(2, '0');
-        await setDoc(doc(db, 'stores', id), { name: id + ' 門市', enabled: true }, { merge: true });
-      }
-      const snap2 = await getDocs(collection(db, 'stores'));
-      stores = snap2.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id));
-    }
-
     tbody.innerHTML = '';
     const baseUrl = location.href.replace(/admin\.html.*$/, '');
 
@@ -426,7 +420,7 @@ $('#runCheckBtn').onclick=()=>{
     ❌ 沒紀錄次數就想領取 (應被拒絕)<br>
     ❌ 日期造假 (應被拒絕)<br>
     ❌ 冒用他人身分 (應被拒絕)<br>
-    <strong>✅ 檢查完成。請另外用無痕視窗 + 門市 QR 實際抽一次（驗證客戶端能讀到結果）。</strong>
+    <strong>✅ 檢查完成。請另外用無痕視窗 + 門市 QR 實際抽一次（驗證顧客端能讀到結果）。</strong>
   `;
 };
 </script>
