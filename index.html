@@ -73,6 +73,11 @@ if(!store && !testCode){
   $('#store').textContent = '門市代碼：' + store;
 }
 
+// 防刷檢查：如果當前分頁已經抽過，更新提示文字
+if(sessionStorage.getItem('has_drawn_in_session') === 'true') {
+  stop('本次抽紅包已完成！');
+}
+
 if(testCode){
   $('#tb').hidden=false;$('#store').textContent='測試模式';
   getDoc(doc(db,'testLinks',testCode)).then(s=>{TL=s.data();if(!TL)throw 0}).catch(()=>stop('測試連結無效或已過期'));
@@ -135,6 +140,7 @@ async function claim(){
     
     try{
       await b.commit();
+      sessionStorage.setItem('has_drawn_in_session', 'true');
       return { n: slotId };
     }catch(e){
       console.warn('Attempt', t, 'failed for slot', slotId, e);
@@ -154,7 +160,10 @@ function testDraw(){
 function showResult(d){
   const R=$('#result'),rb=$('#rb'),rl=$('#rl'),rimg=$('#rimg');
   R.hidden=false;rb.hidden=false;rl.hidden=true;$('#rp').style.fontSize='';rb.textContent='關閉';
-  rb.onclick=()=>R.hidden=true;
+  rb.onclick=()=>{
+    R.hidden=true;
+    stop('本次抽紅包已完成！');
+  };
   if(d.ok){
     $('#rt').textContent=(d.test?'（測試）':'')+'🎉 恭喜獲得';
     $('#rp').textContent=d.prize;
@@ -197,7 +206,7 @@ $('#go').onclick=async()=>{
   if(testCode){if(!TL)return fail('測試連結無效或已過期');t=testDraw()}
   else{r.textContent='確認資格中…';const c=await claim();if(c.err)return fail(c.err);n=c.n}
   r.textContent='';
-  await rain();n?await reveal(n):showResult(t);busy=false;b.disabled=!canDraw};
+  await rain();n?await reveal(n):showResult(t);busy=false;};
 
 function rain(){return new Promise(done=>{
   const G=$('#game'),cv=$('#cv'),ctx=cv.getContext('2d'),dpr=devicePixelRatio||1,W=innerWidth,H=innerHeight;
